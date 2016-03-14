@@ -4,15 +4,26 @@ var splash = {
     canvas: document.getElementById("splash"),
     ctx: null,
     data: {
-        score: {
-            "onderzoeken": 4.8,
-            "conceptualiseren": 3.25,
-            "concretiseren": 7.5,
-            "itereren": 6,
-            "samenwerken": 4.5,
-            "organiseren": 3,
-            "ontwikkelen": 5.3
-        },
+        descriptions: ["onderzoeken", "conceptualiseren", "concretiseren", "itereren", "samenwerken", "organiseren", "ontwikkelen"],
+        scoreSets: [{
+            name: "Je peerscore",
+            fillstyle: "red",
+            strokestyle: "none",
+            score: [4.8, 3.25, 7.5, 6, 4.5, 3, 5.3],
+            enabled: true
+        }, {
+            name: "Je zelfreflectie",
+            fillstyle: "none",
+            strokestyle: "black",
+            score: [3.25, 7.5, 6, 4.5, 3, 5.3, 4.8],
+            enabled: false
+        }, {
+            name: "Het gemiddelde van alle studenten",
+            fillstyle: "none",
+            strokestyle: "blue",
+            score: [7.5, 6, 4.5, 3, 5.3, 4.8, 3.25],
+            enabled: false
+        }],
         scoremax: 10
     },
 
@@ -21,8 +32,8 @@ var splash = {
 
         this.ctx = this.canvas.getContext("2d");
 
-        this.ctx.font = "16px Arial";
-        this.ctx.textAlign = "center";
+        console.log(this.getNames());
+        this.getCheckboxes();
 
         this.redraw();
 
@@ -32,17 +43,52 @@ var splash = {
         });
     },
 
+    getNames: function getNames() {
+        return this.data.scoreSets.map(function (set) {
+            return set.name;
+        });
+    },
+    setEnabled: function setEnabled(name, to) {
+        console.log(name, to);
+        this.data.scoreSets.forEach(function (set) {
+            if (set.name === name) set.enabled = to;
+        });
+        this.redraw();
+    },
+    getCheckboxes: function getCheckboxes() {
+        var _this2 = this;
+
+        this.data.scoreSets.forEach(function (set, i) {
+            var chk = document.createElement("input");
+            chk.type = "checkbox";
+            if (i == 0) chk.checked = true;
+            chk.id = set.name.replace(" ", "_").toLowerCase();
+            chk.onclick = function (e) {
+                console.log(e.srcElement.checked);_this2.setEnabled(set.name, e.srcElement.checked);
+            };
+            var lbl = document.createElement("label");
+            lbl.htmlFor = set.name.replace(" ", "_").toLowerCase();
+            lbl.innerHTML = set.name;
+            document.body.appendChild(chk);
+            document.body.appendChild(lbl);
+        });
+    },
+
     redraw: function redraw() {
-        this.canvas.height = this.canvas.width = Math.min(window.innerWidth, window.innerHeight);
+        var _this3 = this;
+
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawOuterShape();
-        this.drawSplash();
+        this.data.scoreSets.forEach(function (set) {
+            if (set.enabled) _this3.drawSplash(set);
+        });
     },
 
     drawOuterShape: function drawOuterShape() {
-        var data = this.data.score,
-            sides = Object.keys(data).length,
-            size = this.canvas.width / 3,
+        var sides = this.data.descriptions.length,
+            size = Math.min(this.canvas.width, this.canvas.height) / 3,
             xCenter = this.canvas.width / 2,
             yCenter = this.canvas.height / 2;
 
@@ -57,7 +103,11 @@ var splash = {
                 var x = xCenter + thisSize * Math.cos(i * 2 * Math.PI / sides),
                     y = yCenter + thisSize * Math.sin(i * 2 * Math.PI / sides);
 
-                if (j === this.data.scoremax) this.ctx.fillText(Object.keys(data)[i - 1], x, y);
+                if (j === this.data.scoremax) {
+                    this.ctx.font = "16px Arial";
+                    this.ctx.textAlign = x < xCenter ? "right" : "left";
+                    this.ctx.fillText(this.data.descriptions[i - 1], x, y);
+                }
 
                 this.ctx.lineTo(x, y);
             }
@@ -66,20 +116,21 @@ var splash = {
                 this.ctx.strokeStyle = "#ccc";
             } else {
                 this.ctx.strokeStyle = "#000";
-                //this.ctx.fillText(Object.keys(data)[i - 1], x, y);
             }
             this.ctx.stroke();
         }
     },
 
-    drawSplash: function drawSplash() {
-        var data = this.data.score,
-            sides = Object.keys(data).length,
-            size = this.canvas.width / 3,
+    drawSplash: function drawSplash(scoreSet) {
+        var data = scoreSet.score,
+            sides = scoreSet.score.length,
+            size = Math.min(this.canvas.width, this.canvas.height) / 3,
             xCenter = this.canvas.width / 2,
             yCenter = this.canvas.height / 2,
             radAngle = 2 * Math.PI / sides,
             radHalfAngle = radAngle / 2;
+
+        this.ctx.save();
 
         this.ctx.beginPath();
 
@@ -98,8 +149,6 @@ var splash = {
 
             var cp1 = this.canvas.height / this.map(delta1, 220, 30, 10, 50);
             var cp2 = this.canvas.height / this.map(delta2, 220, 30, 10, 50);
-
-            console.log(previousLength, targetLength);
 
             var target = {
                 x: xCenter + targetLength * Math.cos(i * radAngle),
@@ -146,8 +195,17 @@ var splash = {
             this.ctx.bezierCurveTo(controlA.x, controlA.y, controlB.x, controlB.y, halfway.x, halfway.y);
             this.ctx.bezierCurveTo(controlC.x, controlC.y, controlD.x, controlD.y, target.x, target.y);
         }
-        this.ctx.stroke();
-        this.ctx.fill();
+
+        this.ctx.fillStyle = scoreSet.fillstyle;
+        if (scoreSet.strokestyle != "none") {
+            this.ctx.strokeStyle = scoreSet.strokestyle;
+            this.ctx.stroke();
+            console.log("stroke");
+        }
+        if (scoreSet.fillstyle != "none") {
+            this.ctx.fillStyle = scoreSet.fillstyle;
+            this.ctx.fill();
+        }
     },
 
     map: function map(src, in_min, in_max, out_min, out_max) {

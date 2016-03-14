@@ -2,15 +2,35 @@ let splash = {
     canvas: document.getElementById("splash"),
     ctx: null,
     data: {
-        score: {
-            "onderzoeken": 4.8,
-            "conceptualiseren": 3.25,
-            "concretiseren": 7.5,
-            "itereren": 6,
-            "samenwerken": 4.5,
-            "organiseren": 3,
-            "ontwikkelen": 5.3
-        },
+        descriptions: [ "onderzoeken",
+                        "conceptualiseren",
+                        "concretiseren",
+                        "itereren",
+                        "samenwerken",
+                        "organiseren",
+                        "ontwikkelen"],
+        scoreSets: [{
+            name: "Je peerscore",
+            fillstyle: "red",
+            strokestyle: "none",
+            score: [4.8, 3.25, 7.5, 6, 4.5, 3, 5.3],
+            enabled: true
+            },
+            {
+            name: "Je zelfreflectie",
+            fillstyle: "none",
+            strokestyle: "black",
+            score: [3.25, 7.5, 6, 4.5, 3, 5.3, 4.8],
+            enabled: false
+            },
+            {
+                name: "Het gemiddelde van alle studenten",
+                fillstyle: "none",
+                strokestyle: "blue",
+                score: [7.5, 6, 4.5, 3, 5.3, 4.8, 3.25],
+                enabled: false
+            }
+        ],
         scoremax: 10
     },
 
@@ -18,8 +38,8 @@ let splash = {
 
         this.ctx = this.canvas.getContext("2d");
 
-        this.ctx.font="16px Arial";
-        this.ctx.textAlign = "center";
+        console.log(this.getNames());
+        this.getCheckboxes();
 
         this.redraw();
 
@@ -29,17 +49,48 @@ let splash = {
         });
     },
 
+    getNames: function() {
+        return this.data.scoreSets.map(set => {
+           return set.name;
+        });
+    },
+    setEnabled: function(name,to) {
+        console.log(name,to);
+        this.data.scoreSets.forEach(set => {
+            if (set.name === name)
+                set.enabled = to;
+        });
+        this.redraw();
+    },
+    getCheckboxes: function() {
+        this.data.scoreSets.forEach((set, i) => {
+            var chk = document.createElement("input");
+            chk.type = "checkbox";
+            if (i==0) chk.checked = true;
+            chk.id = set.name.replace(" ","_").toLowerCase();
+            chk.onclick = (e) => {console.log(e.srcElement.checked);this.setEnabled(set.name,e.srcElement.checked)}
+            let lbl = document.createElement("label");
+            lbl.htmlFor = set.name.replace(" ","_").toLowerCase();
+            lbl.innerHTML = set.name;
+            document.body.appendChild(chk)
+            document.body.appendChild(lbl)
+        });
+    },
+
     redraw: function () {
-        this.canvas.height = this.canvas.width = Math.min(window.innerWidth,window.innerHeight);
+        this.canvas.width = window.innerWidth;
+        this.canvas.height = window.innerHeight;
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
         this.drawOuterShape();
-        this.drawSplash();
+        this.data.scoreSets.forEach(set => {
+            if (set.enabled)
+                this.drawSplash(set);
+        });
     },
 
     drawOuterShape: function () {
-        let data = this.data.score,
-            sides = Object.keys(data).length,
-            size = this.canvas.width/3,
+        let sides = this.data.descriptions.length,
+            size = Math.min(this.canvas.width,this.canvas.height)/3,
             xCenter = this.canvas.width/2,
             yCenter = this.canvas.height/2;
 
@@ -55,20 +106,19 @@ let splash = {
                     y = yCenter + thisSize * Math.sin(i * 2 * Math.PI / sides);
 
 
-                if (j === this.data.scoremax)
-                    this.ctx.fillText(Object.keys(data)[i - 1], x, y);
+                if (j === this.data.scoremax) {
+                    this.ctx.font= "16px Arial";
+                    this.ctx.textAlign = (x < xCenter ? "right" : "left");
+                    this.ctx.fillText(this.data.descriptions[i - 1], x, y);
+                }
 
                 this.ctx.lineTo(x, y)
-
-
-
             }
 
             if (j != this.data.scoremax){
                 this.ctx.strokeStyle = "#ccc";
             } else {
                 this.ctx.strokeStyle = "#000";
-                //this.ctx.fillText(Object.keys(data)[i - 1], x, y);
             }
             this.ctx.stroke();
         }
@@ -77,14 +127,16 @@ let splash = {
 
     },
 
-    drawSplash: function() {
-        let data = this.data.score,
-            sides = Object.keys(data).length,
-            size = this.canvas.width/3,
+    drawSplash: function(scoreSet) {
+        let data = scoreSet.score,
+            sides = scoreSet.score.length,
+            size = Math.min(this.canvas.width,this.canvas.height)/3,
             xCenter = this.canvas.width/2,
             yCenter = this.canvas.height/2,
             radAngle = 2 * Math.PI / sides,
             radHalfAngle = radAngle / 2;
+
+        this.ctx.save();
 
         this.ctx.beginPath();
 
@@ -104,8 +156,6 @@ let splash = {
 
             let cp1 = this.canvas.height / this.map(delta1,220,30,10,50);
             let cp2 = this.canvas.height / this.map(delta2,220,30,10,50);
-
-            console.log(previousLength,targetLength);
 
             let target = {
                 x: xCenter + targetLength * Math.cos(i * radAngle),
@@ -163,8 +213,17 @@ let splash = {
                 target.x, target.y
             );
         }
-        this.ctx.stroke();
-        this.ctx.fill();
+
+        this.ctx.fillStyle = scoreSet.fillstyle;
+        if (scoreSet.strokestyle != "none") {
+            this.ctx.strokeStyle = scoreSet.strokestyle;
+            this.ctx.stroke();
+            console.log("stroke");
+        }
+        if (scoreSet.fillstyle != "none") {
+            this.ctx.fillStyle = scoreSet.fillstyle;
+            this.ctx.fill();
+        }
     },
 
     map: function (src, in_min, in_max, out_min, out_max) {
