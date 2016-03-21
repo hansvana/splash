@@ -1,44 +1,17 @@
 let splash = {
-    canvas: document.getElementById("splash"),
+    canvas: document.createElement("canvas"),
+    parent: null,
     ctx: null,
-    data: {
-        descriptions: [ "onderzoeken",
-                        "conceptualiseren",
-                        "concretiseren",
-                        "itereren",
-                        "samenwerken",
-                        "organiseren",
-                        "ontwikkelen"],
-        scoreSets: [{
-            name: "Je peerscore",
-            fillstyle: "red",
-            strokestyle: "none",
-            score: [4.8, 3.25, 7.5, 6, 4.5, 3, 5.3],
-            enabled: true
-            },
-            {
-            name: "Je zelfreflectie",
-            fillstyle: "none",
-            strokestyle: "black",
-            score: [3.25, 7.5, 6, 4.5, 3, 5.3, 4.8],
-            enabled: false
-            },
-            {
-                name: "Het gemiddelde van alle studenten",
-                fillstyle: "none",
-                strokestyle: "blue",
-                score: [7.5, 6, 4.5, 3, 5.3, 4.8, 3.25],
-                enabled: false
-            }
-        ],
-        scoremax: 10
-    },
+    data: {},
 
-    init: function () {
+    init: function (parentId, data) {
+        this.parent = document.getElementById(parentId);
+        this.parent.appendChild(this.canvas);
+
+        this.data = data;
 
         this.ctx = this.canvas.getContext("2d");
 
-        console.log(this.getNames());
         this.getCheckboxes();
 
         this.redraw();
@@ -55,7 +28,6 @@ let splash = {
         });
     },
     setEnabled: function(name,to) {
-        console.log(name,to);
         this.data.scoreSets.forEach(set => {
             if (set.name === name)
                 set.enabled = to;
@@ -66,20 +38,20 @@ let splash = {
         this.data.scoreSets.forEach((set, i) => {
             var chk = document.createElement("input");
             chk.type = "checkbox";
-            if (i==0) chk.checked = true;
+            chk.checked = set.enabled;
             chk.id = set.name.replace(" ","_").toLowerCase();
             chk.onclick = (e) => {console.log(e.srcElement.checked);this.setEnabled(set.name,e.srcElement.checked)}
             let lbl = document.createElement("label");
             lbl.htmlFor = set.name.replace(" ","_").toLowerCase();
             lbl.innerHTML = set.name;
-            document.body.appendChild(chk)
-            document.body.appendChild(lbl)
+            this.parent.appendChild(chk)
+            this.parent.appendChild(lbl)
         });
     },
 
     redraw: function () {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        this.canvas.width = this.parent.clientWidth;
+        this.canvas.height = this.parent.clientHeight;
         this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
         this.drawOuterShape();
         this.data.scoreSets.forEach(set => {
@@ -92,11 +64,12 @@ let splash = {
         let sides = this.data.descriptions.length,
             size = Math.min(this.canvas.width,this.canvas.height)/3,
             xCenter = this.canvas.width/2,
-            yCenter = this.canvas.height/2;
+            yCenter = this.canvas.height/2,
+            scale = this.data.scoremax - this.data.scoremin;
 
-        for (let j = 1; j <= this.data.scoremax; j++) {
+        for (let j = 1; j <= scale; j++) {
 
-            let thisSize = (size / this.data.scoremax) * j;
+            let thisSize = (size / scale) * j;
             this.ctx.beginPath();
             this.ctx.moveTo(xCenter + thisSize * Math.cos(0), yCenter + thisSize * Math.sin(0));
 
@@ -106,8 +79,8 @@ let splash = {
                     y = yCenter + thisSize * Math.sin(i * 2 * Math.PI / sides);
 
 
-                if (j === this.data.scoremax) {
-                    this.ctx.font= "16px Arial";
+                if (j === scale) {
+                    this.ctx.font= "14x Lato";
                     this.ctx.textAlign = (x < xCenter ? "right" : "left");
                     this.ctx.fillText(this.data.descriptions[i - 1], x, y);
                 }
@@ -129,23 +102,26 @@ let splash = {
 
     drawSplash: function(scoreSet) {
         let data = scoreSet.score,
-            sides = scoreSet.score.length,
+            sides = this.data.descriptions.length,
             size = Math.min(this.canvas.width,this.canvas.height)/3,
             xCenter = this.canvas.width/2,
             yCenter = this.canvas.height/2,
             radAngle = 2 * Math.PI / sides,
-            radHalfAngle = radAngle / 2;
+            radHalfAngle = radAngle / 2,
+            scale = this.data.scoremax - this.data.scoremin;
 
         this.ctx.save();
 
         this.ctx.beginPath();
 
-
         for (let i = 1; i <= sides; i++){
 
-            let prev = (i>1 ? i-2 : sides-1);
-            let scalarPrev = data[Object.keys(data)[prev]] / this.data.scoremax;
-            let scalar = data[Object.keys(data)[i-1]] / this.data.scoremax;
+            let score = data.find( item => item["tags"] === this.data.descriptions[i-1] )["average"],
+                prev = (i>1 ? i-2 : sides-1),
+                scorePrev = data.find( item => item["tags"] === this.data.descriptions[prev] )["average"];
+
+            let scalarPrev = (scorePrev-this.data.scoremin) / scale;
+            let scalar = (score-this.data.scoremin) / scale;
 
             let targetLength = size * scalar;
             let previousLength = size * scalarPrev;
@@ -217,8 +193,7 @@ let splash = {
         this.ctx.fillStyle = scoreSet.fillstyle;
         if (scoreSet.strokestyle != "none") {
             this.ctx.strokeStyle = scoreSet.strokestyle;
-            this.ctx.stroke();
-            console.log("stroke");
+            this.ctx.stroke()
         }
         if (scoreSet.fillstyle != "none") {
             this.ctx.fillStyle = scoreSet.fillstyle;
@@ -231,4 +206,4 @@ let splash = {
     }
 };
 
-window.addEventListener("load", ()=> {splash.init()});
+//splash.init("splash",{"descriptions":["Onderzoeken","Concretiseren","Conceptualiseren","Itereren","Samenwerken","Organiseren","Ontwikkelen"],"scoreSets":[{"name":"Je peerscore","fillstyle":"red","strokestyle":"none","enabled":true,"score":[{"tags":"Conceptualiseren","average":"6.6875"},{"tags":"Concretiseren","average":"6.75"},{"tags":"Itereren","average":"7.5"},{"tags":"Onderzoeken","average":"7.333333333333333"},{"tags":"Ontwikkelen","average":"7.375"},{"tags":"Organiseren","average":"6.875"},{"tags":"Samenwerken","average":"7.392857142857143"}]},{"name":"Je zelfreflectie","fillstyle":"none","strokestyle":"blue","enabled":false,"score":[{"tags":"Conceptualiseren","average":"7.25"},{"tags":"Concretiseren","average":"7.75"},{"tags":"Itereren","average":"7.333333333333333"},{"tags":"Onderzoeken","average":"6.666666666666667"},{"tags":"Ontwikkelen","average":"8"},{"tags":"Organiseren","average":"6.25"},{"tags":"Samenwerken","average":"7.428571428571429"}]},{"name":"De gemiddelde score","fillstyle":"none","strokestyle":"black","enabled":false,"score":[{"tags":"Conceptualiseren","average":"6.978472222222222"},{"tags":"Concretiseren","average":"7.01875"},{"tags":"Itereren","average":"7.071296296296296"},{"tags":"Onderzoeken","average":"6.997222222222222"},{"tags":"Ontwikkelen","average":"7.052083333333333"},{"tags":"Organiseren","average":"7.020833333333333"},{"tags":"Samenwerken","average":"7.01984126984127"}]}],"scoremax":10,"scoremin":5})
