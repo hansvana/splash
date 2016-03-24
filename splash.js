@@ -5,6 +5,7 @@ var splash = {
     parent: null,
     ctx: null,
     data: {},
+    gradientImg: document.createElement('IMG'),
 
     init: function init(parentId, data) {
         var _this = this;
@@ -19,6 +20,13 @@ var splash = {
         this.getCheckboxes();
 
         this.redraw();
+
+        this.gradientImg.src = "js/splash/gradient.jpg";
+
+        this.gradientImg.onload = function () {
+            console.log("img load");
+            _this.redraw();
+        };
 
         window.addEventListener("resize", function () {
 
@@ -59,8 +67,7 @@ var splash = {
     redraw: function redraw() {
         var _this3 = this;
 
-        this.canvas.width = this.parent.clientWidth;
-        this.canvas.height = this.parent.clientHeight;
+        this.canvas.height = this.canvas.width = this.parent.clientWidth;
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawOuterShape();
         this.data.scoreSets.forEach(function (set) {
@@ -70,7 +77,7 @@ var splash = {
 
     drawOuterShape: function drawOuterShape() {
         var sides = this.data.descriptions.length,
-            size = Math.min(this.canvas.width, this.canvas.height) / 3,
+            size = Math.min(this.canvas.width, this.canvas.height) / 2.5,
             xCenter = this.canvas.width / 2,
             yCenter = this.canvas.height / 2,
             scale = this.data.scoremax - this.data.scoremin;
@@ -109,7 +116,7 @@ var splash = {
 
         var data = scoreSet.score,
             sides = this.data.descriptions.length,
-            size = Math.min(this.canvas.width, this.canvas.height) / 3,
+            size = Math.min(this.canvas.width, this.canvas.height) / 2.5,
             xCenter = this.canvas.width / 2,
             yCenter = this.canvas.height / 2,
             radAngle = 2 * Math.PI / sides,
@@ -198,7 +205,12 @@ var splash = {
             this.ctx.strokeStyle = scoreSet.strokestyle;
             this.ctx.stroke();
         }
-        if (scoreSet.fillstyle != "none") {
+        if (scoreSet.fillstyle === "gradient") {
+            this.ctx.closePath();
+            this.ctx.clip();
+            this.ctx.drawImage(this.gradientImg, 0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.restore();
+        } else if (scoreSet.fillstyle != "none") {
             this.ctx.fillStyle = scoreSet.fillstyle;
             this.ctx.fill();
         }
@@ -209,6 +221,6 @@ var splash = {
     }
 };
 
-//splash.init("splash",{"descriptions":["Onderzoeken","Concretiseren","Conceptualiseren","Itereren","Samenwerken","Organiseren","Ontwikkelen"],"scoreSets":[{"name":"Je peerscore","fillstyle":"red","strokestyle":"none","enabled":true,"score":[{"tags":"Conceptualiseren","average":"6.6875"},{"tags":"Concretiseren","average":"6.75"},{"tags":"Itereren","average":"7.5"},{"tags":"Onderzoeken","average":"7.333333333333333"},{"tags":"Ontwikkelen","average":"7.375"},{"tags":"Organiseren","average":"6.875"},{"tags":"Samenwerken","average":"7.392857142857143"}]},{"name":"Je zelfreflectie","fillstyle":"none","strokestyle":"blue","enabled":false,"score":[{"tags":"Conceptualiseren","average":"7.25"},{"tags":"Concretiseren","average":"7.75"},{"tags":"Itereren","average":"7.333333333333333"},{"tags":"Onderzoeken","average":"6.666666666666667"},{"tags":"Ontwikkelen","average":"8"},{"tags":"Organiseren","average":"6.25"},{"tags":"Samenwerken","average":"7.428571428571429"}]},{"name":"De gemiddelde score","fillstyle":"none","strokestyle":"black","enabled":false,"score":[{"tags":"Conceptualiseren","average":"6.978472222222222"},{"tags":"Concretiseren","average":"7.01875"},{"tags":"Itereren","average":"7.071296296296296"},{"tags":"Onderzoeken","average":"6.997222222222222"},{"tags":"Ontwikkelen","average":"7.052083333333333"},{"tags":"Organiseren","average":"7.020833333333333"},{"tags":"Samenwerken","average":"7.01984126984127"}]}],"scoremax":10,"scoremin":5})
+//splash.init("splash",{"descriptions":["Onderzoeken","Concretiseren","Conceptualiseren","Itereren","Samenwerken","Organiseren","Ontwikkelen"],"scoreSets":[{"name":"Je peerscore","fillstyle":"gradient","strokestyle":"none","enabled":true,"score":[{"tags":"Conceptualiseren","average":"6.6875"},{"tags":"Concretiseren","average":"6.75"},{"tags":"Itereren","average":"7.5"},{"tags":"Onderzoeken","average":"7.333333333333333"},{"tags":"Ontwikkelen","average":"7.375"},{"tags":"Organiseren","average":"6.875"},{"tags":"Samenwerken","average":"7.392857142857143"}]},{"name":"Je zelfreflectie","fillstyle":"none","strokestyle":"blue","enabled":false,"score":[{"tags":"Conceptualiseren","average":"7.25"},{"tags":"Concretiseren","average":"7.75"},{"tags":"Itereren","average":"7.333333333333333"},{"tags":"Onderzoeken","average":"6.666666666666667"},{"tags":"Ontwikkelen","average":"8"},{"tags":"Organiseren","average":"6.25"},{"tags":"Samenwerken","average":"7.428571428571429"}]},{"name":"De gemiddelde score","fillstyle":"none","strokestyle":"black","enabled":false,"score":[{"tags":"Conceptualiseren","average":"6.978472222222222"},{"tags":"Concretiseren","average":"7.01875"},{"tags":"Itereren","average":"7.071296296296296"},{"tags":"Onderzoeken","average":"6.997222222222222"},{"tags":"Ontwikkelen","average":"7.052083333333333"},{"tags":"Organiseren","average":"7.020833333333333"},{"tags":"Samenwerken","average":"7.01984126984127"}]}],"scoremax":10,"scoremin":5})
 
 //# sourceMappingURL=splash.js.map
